@@ -1,0 +1,77 @@
+<h1>Formulario</h1>
+
+<form id="myForm" action="">
+  <label for="nombre">Nombre:</label>
+<input type="text" id="nombre" name="nombre" required>
+
+<label for="apellido">Apellido:</label>
+<input type="text" id="apellido" name="apellido" required>
+
+<label for="ciudad">Ciudad:</label>
+<select id="ciudad" name="ciudad">
+  <option value="Santiago">Santiago</option>
+  <option value="Valparaiso">Valparaíso</option>
+  <option value="Concepcion">Concepción</option>
+</select>
+
+<label for="fechaNacimiento">Fecha de nacimiento:</label>
+<input type="date" id="fechaNacimiento" name="fechaNacimiento" required>
+</form>
+
+<script src="https://unpkg.com/git.js"></script>
+<script>
+  const form = document.getElementById('myForm');
+
+  form.addEventListener('submit', function(event) {
+    event.preventDefault();
+
+    const nombre = document.getElementById('nombre').value;
+    const apellido = document.getElementById('apellido').value;
+    const ciudad = document.getElementById('ciudad').value;
+    const fechaNacimiento = document.getElementById('fechaNacimiento').value;
+
+    const data = {
+      nombre: nombre,
+      apellido: apellido,
+      ciudad: ciudad,
+      fechaNacimiento: fechaNacimiento
+    };
+
+    createBranchAndWriteFile(data);
+  });
+
+  async function createBranchAndWriteFile(data) {
+    const repoURL = '<URL_DEL_REPOSITORIO>'; // Inserta la URL de tu repositorio
+    const repoBranch = '<NOMBRE_DE_LA_RAMA>'; // Inserta el nombre de la rama que deseas crear
+    const fileName = 'config.ini';
+    const fileContent = createINIContent(data);
+
+    const repo = await Git.Repository.open(repoURL);
+    const branch = await repo.createBranch(repoBranch);
+    await repo.checkoutBranch(branch);
+
+    const index = await repo.refreshIndex();
+    await index.addByPath(fileName);
+    await index.write();
+    const oid = await index.writeTree();
+    const head = await Git.Reference.nameToId(repo, 'HEAD');
+    const parent = await repo.getCommit(head);
+    const author = Git.Signature.now('Tu Nombre', 'tu@email.com');
+    const committer = Git.Signature.now('Tu Nombre', 'tu@email.com');
+    const commitId = await repo.createCommit('HEAD', author, committer, 'Mensaje del commit', oid, [parent]);
+
+    console.log('Archivo creado en la rama:', repoBranch);
+  }
+
+  function createINIContent(data) {
+    let content = '';
+
+    for (const key in data) {
+      if (data.hasOwnProperty(key)) {
+        content += `${key} = ${data[key]}\n`;
+      }
+    }
+
+    return content;
+  }
+</script>
